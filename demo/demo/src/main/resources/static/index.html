@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <title>Actor CRUD Test</title>
+</head>
+<body>
+<h1>Actor CRUD Test</h1>
+
+<!-- Yeni Actor Ekle -->
+<h3>Yeni Aktör Ekle</h3>
+<input type="text" id="firstName" placeholder="First Name" />
+<input type="text" id="lastName" placeholder="Last Name" />
+<input type="text" id="lastUpdate" placeholder="Last Update (YYYY-MM-DD)" />
+<button onclick="addActor()">Ekle</button>
+
+<hr/>
+
+<!-- Actor Listesi -->
+<h3>Actor Listesi</h3>
+<button onclick="loadActors()">Yenile</button>
+<ul id="actorList"></ul>
+
+<script>
+    const baseUrl = "http://localhost:8081/api/actors";
+
+    // Tüm aktörleri getir ve listele
+    function loadActors() {
+        fetch(baseUrl)
+            .then(response => response.json())
+            .then(data => {
+                const list = document.getElementById("actorList");
+                list.innerHTML = "";
+                data.forEach(actor => {
+                    const li = document.createElement("li");
+                    li.textContent = `${actor.firstName} ${actor.lastName} (Last Update: ${actor.lastUpdate}) `;
+
+                    // Silme butonu
+                    const delBtn = document.createElement("button");
+                    delBtn.textContent = "Sil";
+                    delBtn.onclick = () => deleteActor(actor.id);
+
+                    li.appendChild(delBtn);
+                    list.appendChild(li);
+                });
+            })
+            .catch(err => alert("Aktörler yüklenirken hata: " + err));
+    }
+
+    // Yeni aktör ekle
+    function addActor() {
+        const firstName = document.getElementById("firstName").value.trim();
+        const lastName = document.getElementById("lastName").value.trim();
+        const lastUpdate = document.getElementById("lastUpdate").value.trim();
+
+        if (!firstName || !lastName || !lastUpdate) {
+            alert("Lütfen tüm alanları doldurun.");
+            return;
+        }
+
+        const actor = { firstName, lastName, lastUpdate };
+
+        fetch(baseUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(actor)
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("Ekleme başarısız");
+            return response.json();
+        })
+        .then(() => {
+            alert("Aktör eklendi!");
+            document.getElementById("firstName").value = "";
+            document.getElementById("lastName").value = "";
+            document.getElementById("lastUpdate").value = "";
+            loadActors();
+        })
+        .catch(err => alert(err));
+    }
+
+    // Aktör sil
+    function deleteActor(id) {
+        if (!confirm("Bu aktörü silmek istediğinize emin misiniz?")) return;
+
+        fetch(`${baseUrl}/${id}`, { method: "DELETE" })
+            .then(response => {
+                if (!response.ok) throw new Error("Silme başarısız");
+                loadActors();
+            })
+            .catch(err => alert(err));
+    }
+
+    // Sayfa açılır açılmaz aktörleri yükle
+    window.onload = loadActors;
+</script>
+</body>
+</html>
